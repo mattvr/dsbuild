@@ -1,42 +1,50 @@
-/**
- * dsbuild - Deno + esbuild
- * 
- * This is a simple build tool for Deno + esbuild. It compiles Deno TypeScript 
- * to a single JavaScript file that can be run in the browser.
- * 
- * Example usage:
- *  `dsbuild --in src/app.ts --out public/app.js`
- *    - Build `src/app.ts` to `public/app.js`
- * 
- *  `dsbuild --watch`
- *    - Watch `src/app.ts` and rebuild on changes
- * 
- *  `dsbuild --serve`
- *    - Build (with defaults), and serve `public/` on `localhost:8080`
- * 
- *  `dsbuild --serve-only`
- *    - Serve `public/` on `localhost:8080` without building
- * 
- *  `dsbuild --import-map import-map.json`
- *    - Build with import map
- * 
- *  `dsbuild --tsconfig`
- *    - Generate a tsconfig.json you can use for Deno + browser development
- */
+/* dsbuild - Deno + esbuild */
 
 import * as esbuild from "https://deno.land/x/esbuild@v0.18.11/mod.js";
 
 // Import the WASM build on platforms where running subprocesses is not
 // permitted, such as Deno Deploy, or when running without `--allow-run`.
-// import * as esbuild from "https://deno.land/x/esbuild@v0.18.11/wasm.js";
+// import as esbuild from "https://deno.land/x/esbuild@v0.18.11/wasm.js";
 
 import { denoPlugins } from "https://deno.land/x/esbuild_deno_loader@0.8.1/mod.ts";
 
-import { parse } from "https://deno.land/std@0.185.0/flags/mod.ts";
-import { isAbsolute, join, resolve, normalize } from "https://deno.land/std@0.185.0/path/mod.ts";
+import { parse } from "https://deno.land/std@0.196.0/flags/mod.ts";
+import { isAbsolute, join, resolve, normalize } from "https://deno.land/std@0.196.0/path/mod.ts";
 import { serve, setServeDir } from "./serve.ts";
 
+const helpText = `dsbuild - Deno + esbuild
+
+This is a simple build tool for Deno + esbuild. It compiles Deno TypeScript 
+to a single JavaScript file that can be run in the browser.
+
+Example usage:
+ \`dsbuild --in src/app.ts --out public/app.js\`
+   - Build \`src/app.ts\` to \`public/app.js\`
+
+ \`dsbuild --watch\`
+   - Watch \`src/app.ts\` and rebuild on changes
+
+ \`dsbuild --serve\`
+   - Build (with defaults), and serve \`public/\` on \`localhost:8080\`
+
+ \`dsbuild --serve-only\`
+   - Serve \`public/\` on \`localhost:8080\` without building
+
+ \`dsbuild --import-map import-map.json\`
+   - Build with import map
+
+ \`dsbuild --tsconfig\`
+   - Generate a tsconfig.json you can use for Deno + browser development
+`
+
 const args = parse(Deno.args);
+
+const isHelp = args["help"] || args["h"];
+
+if (isHelp) {
+  console.log(helpText);
+  Deno.exit(0);
+}
 
 const generateTsConfig = args['tsconfig'] || false;
 
