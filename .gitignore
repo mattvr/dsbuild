@@ -1,0 +1,10 @@
+*
+!.gitignore
+!example/
+!example/**
+!*.html
+!*.js
+!*.json
+!*.md
+!*.ts
+!dsbuild.svg
