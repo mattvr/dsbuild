@@ -1,6 +1,6 @@
 <p align="center"><a href="https://github.com/mattvr/dsbuild">
 <img src="/dsbuild.svg" ></a></p>
-<p align="center"><strong>Simple, fast bundles for next-gen web development.</strong></p>
+<p align="center"><strong>Simple, fast builds for next-gen web development.</strong></p>
 
 ---
 
