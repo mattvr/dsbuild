@@ -1,7 +1,8 @@
 *
 !.gitignore
-!example/
-!example/**
+!.gitattributes
+!examples/
+!examples/**
 !*.html
 !*.js
 !*.json

@@ -62,7 +62,7 @@ if (!isAbsolute(outFile)) {
   outFile = join(cwd, outFile)
 }
 if (importMap && !isAbsolute(importMap)) {
-  importMap = join(cwd, importMap)
+  importMap = join('file://', cwd, importMap)
 }
 if (!isAbsolute(serveDir)) {
   serveDir = join(cwd, serveDir)
@@ -97,7 +97,7 @@ if (import.meta.main) {
   await Deno.mkdir(outDir, { recursive: true });
 
   const opts: esbuild.BuildOptions = {
-    plugins: [...denoPlugins(args["import-map"] ? {
+    plugins: [...denoPlugins(importMap ? {
       "importMapURL": importMap,
     } : {})],
     entryPoints: [inFile],

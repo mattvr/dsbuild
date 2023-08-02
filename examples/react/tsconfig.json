@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "lib": [
+      "dom",
+      "esnext",
+      "deno.ns"
+    ]
+  }
+}
