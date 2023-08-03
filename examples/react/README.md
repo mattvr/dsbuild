@@ -1,5 +1,7 @@
 # `dsbuild` React example
 
+Demo of a simple client-side React app written in Deno.
+
 1. After installing `dsbuild`, run
    `dsbuild --serve --watch --in=app.tsx --import-map=import-map.json` from this
    directory.

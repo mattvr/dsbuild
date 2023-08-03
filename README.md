@@ -38,8 +38,11 @@ deno install -frA -n dsbuild https://deno.land/x/dsbuild/mod.ts
   - Run this command from any directory to compile `src/app.ts` into
     `public/app.js`.
 
-  - This is equivalent to running `dsbuild --in src/app.ts --out public/app.js`
-    which lets you configure the filenames used.
+- ### `dsbuild --in src/app.ts --out public/app.js`
+
+- You can configure the `in` and `out` flags to customize the input and output
+  files.
+- These example values are the same as the defaults when you call `dsbuild`.
 
 - ### `dsbuild --watch`
 
@@ -63,6 +66,11 @@ deno install -frA -n dsbuild https://deno.land/x/dsbuild/mod.ts
 
   - You can also run `dsbuild --tsconfig --out tsconfig.json` to write to a
     file.
+
+- ### `dsbuild --target chrome99,firefox99,safari15`
+
+  - Customize the output target, to specify browsers or a different environment.
+    ([esbuild target docs](https://esbuild.github.io/api/#target))
 
 - ### `DENO_ENV=development dsbuild`
 

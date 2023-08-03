@@ -6,7 +6,7 @@ export const setServeDir = (serveDir_: string) => {
   serveDir = serveDir_
 }
 
-self.addEventListener("message", function (e) {
+self.addEventListener("message", (e: any) => {
   const { serveDir: serveDir_ } = e.data
 
   setServeDir(serveDir_)

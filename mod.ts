@@ -52,6 +52,7 @@ let inFile = args["in"] || args["_"].join("") || "src/app.ts";
 let outFile = args["out"] || "public/app.js";
 let serveDir = args["serve-dir"] || "public";
 let importMap = args["import-map"];
+let target = args["target"] ? args["target"].split(",") : null;
 
 // Replace relative with absolute paths
 const cwd = Deno.cwd();
@@ -104,7 +105,7 @@ if (import.meta.main) {
     outfile: outFile,
     bundle: true,
     format: "esm",
-    target: ["chrome99", "firefox99", "safari15"],
+    target: target ? target : ["chrome99", "firefox99", "safari15"],
     platform: "browser",
     treeShaking: true,
     minify: !isDev,
