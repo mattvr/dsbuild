@@ -1,10 +1,10 @@
 <p align="center"><a href="https://github.com/mattvr/dsbuild">
 <img src="/dsbuild.svg" ></a></p>
-<p align="center"><strong>Simple, fast builds for next-gen web development.</strong></p>
+<p align="center"><strong>Run Deno code in the browser, simple and fast</strong></p>
 
 ---
 
-`dsbuild` compiles [Deno](https://deno.land/) TypeScript to a single JavaScript
+`dsbuild` compiles [Deno](https://deno.land/) TypeScript code to a single JavaScript
 file that can be run in the browser.
 
 **Features:**
