@@ -40,9 +40,10 @@ deno install -frA -n dsbuild https://deno.land/x/dsbuild/mod.ts
 
 - ### `dsbuild --in src/app.ts --out public/app.js`
 
-- You can configure the `in` and `out` flags to customize the input and output
+  - You can configure the `in` and `out` flags to customize the input and output
   files.
-- These example values are the same as the defaults when you call `dsbuild`.
+
+  - These example values are the same as the defaults when you call `dsbuild`.
 
 - ### `dsbuild --watch`
 
