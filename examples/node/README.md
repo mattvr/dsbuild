@@ -10,6 +10,6 @@ apps, this approach can work.
 For the general use case of transforming Deno code to Node you should use
 [dnt](https://github.com/denoland/dnt) (https://github.com/denoland/dnt).
 
-1. After installing `dsbuild`, run `dsbuild --target node18.0` from this
+1. After installing `dsbuild`, run `deno task build` from this
    directory.
-2. Run `node public/app.js` from this directory.
+2. Run `node public/app.js` from this directory to run your Deno program using node.

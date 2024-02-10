@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "build": "dsbuild --target node18.0"
+  }
+}

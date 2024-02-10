@@ -4,11 +4,17 @@
 
 ---
 
-`dsbuild` compiles [Deno](https://deno.land/) TypeScript code to a single JavaScript
-file that can be run in the browser.
+`dsbuild` is a simple, fast static site generator.
+
+It compiles any [Deno](https://deno.land/) TypeScript (or Markdown) into a
+single JavaScript file that can be run in the browser.
+
+It's a one-command, zero-configuration way to build React, Markdown, or other
+JS-powered web sites entirely in Deno.
 
 **Features:**
 
+- Supports TypeScript, MDX (Markdown), JSX, and React out of the box.
 - Automatic rebuilds as you develop (`dsbuild --watch`)
 - Previewing via a simple included web server (`dsbuild --serve`)
 - URL imports using `https://`, `file://`, `npm:`, and import maps.
@@ -33,45 +39,57 @@ deno install -frA -n dsbuild https://deno.land/x/dsbuild/mod.ts
 
 ## Usage
 
+See [examples/](examples/) for full examples of building React, Markdown, or
+other JS-powered web sites.
+
 - ### `dsbuild`
 
   - Run this command from any directory to compile `src/app.ts` into
     `public/app.js`.
 
-- ### `dsbuild --in src/app.ts --out public/app.js`
-
-  - You can configure the `in` and `out` flags to customize the input and output
-  files.
-
-  - These example values are the same as the defaults when you call `dsbuild`.
-
-- ### `dsbuild --watch`
+- ### `dsbuild --watch` (or `dsbuild -w`)
 
   - Watches `src/` directory and rebuilds on changes.
 
-- ### `dsbuild --serve --watch`
+- ### `dsbuild --watch --serve` (or `dsbuild -ws`)
 
   - Watch and serve `public/` on `localhost:8000`.
-
-- ### `dsbuild --serve-only`
-
-  - Serve `public/` on `localhost:8000` without building.
 
 - ### `dsbuild --import-map import-map.json`
 
   - Builds with import map.
 
+- ### `dsbuild --denoconfig`
+
+  - Generates a deno.json you can use for Deno development with proper `target`
+    and `lib` settings for Browsers/React/JSX.
+
+  - You can also run `dsbuild --denoconfig --out deno.json` to write to a
+    file.
+
 - ### `dsbuild --tsconfig`
 
-  - Generates a tsconfig.json you can use for Deno + browser development
+  - Generates a tsconfig.json you can use for Deno development with proper
+    `target` and `lib` settings for Browsers/React/JSX.
 
   - You can also run `dsbuild --tsconfig --out tsconfig.json` to write to a
     file.
+
+- ### `dsbuild --in src/some-file.ts --out public/another-file.js`
+
+  - You can configure the `in` and `out` flags to customize the input and output
+    files.
+    
+  - These example values are the same as the defaults when you call `dsbuild`.
 
 - ### `dsbuild --target chrome99,firefox99,safari15`
 
   - Customize the output target, to specify browsers or a different environment.
     ([esbuild target docs](https://esbuild.github.io/api/#target))
+
+- ### `dsbuild --serve-only`
+
+  - Serve `public/` on `localhost:8000` without building.
 
 - ### `DENO_ENV=development dsbuild`
 

@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "dom.asynciterable", "esnext", "deno.ns"],
+    "jsx": "react-jsxdev",
+    "jsxImportSource": "react"
+  },
+}

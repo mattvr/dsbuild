@@ -1,4 +1,9 @@
 {
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "dom.asynciterable", "esnext", "deno.ns"],
+    "jsx": "react-jsxdev",
+    "jsxImportSource": "react"
+  },
   "imports": {
     "react": "https://esm.sh/v119/react@18.2.0?dev",
     "react-dom/client": "https://esm.sh/v119/react-dom@18.2.0/client?dev",

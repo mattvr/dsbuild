@@ -1,106 +1,59 @@
 /* dsbuild - Deno + esbuild */
 
-import * as esbuild from "https://deno.land/x/esbuild@v0.18.11/mod.js";
-
-// Import the WASM build on platforms where running subprocesses is not
-// permitted, such as Deno Deploy, or when running without `--allow-run`.
-// import as esbuild from "https://deno.land/x/esbuild@v0.18.11/wasm.js";
-
-import { denoPlugins } from "https://deno.land/x/esbuild_deno_loader@0.8.1/mod.ts";
-
-import { parse } from "https://deno.land/std@0.196.0/flags/mod.ts";
-import { isAbsolute, join, resolve, normalize } from "https://deno.land/std@0.196.0/path/mod.ts";
+import { esbuild } from './deps.ts'
+import { denoLoaderPlugin, denoResolverPlugin } from './deps.ts'
+import { parseArgs } from "./deps.ts";
+import { isAbsolute, join, resolve, normalize } from "./deps.ts";
 import { serve, setServeDir } from "./serve.ts";
-
-const helpText = `dsbuild - Deno + esbuild
-
-This is a simple build tool for Deno + esbuild. It compiles Deno TypeScript 
-to a single JavaScript file that can be run in the browser.
-
-Example usage:
- \`dsbuild --in src/app.ts --out public/app.js\`
-   - Build \`src/app.ts\` to \`public/app.js\`
-
- \`dsbuild --watch\`
-   - Watch \`src/app.ts\` and rebuild on changes
-
- \`dsbuild --serve\`
-   - Build (with defaults), and serve \`public/\` on \`localhost:8080\`
-
- \`dsbuild --serve-only\`
-   - Serve \`public/\` on \`localhost:8080\` without building
-
- \`dsbuild --import-map import-map.json\`
-   - Build with import map
-
- \`dsbuild --tsconfig\`
-   - Generate a tsconfig.json you can use for Deno + browser development
-`
-
-const args = parse(Deno.args);
-
-const isHelp = args["help"] || args["h"];
-
-if (isHelp) {
-  console.log(helpText);
-  Deno.exit(0);
-}
-
-const generateTsConfig = args['tsconfig'] || false;
-
-let inFile = args["in"] || args["_"].join("") || "src/app.ts";
-let outFile = args["out"] || "public/app.js";
-let serveDir = args["serve-dir"] || "public";
-let importMap = args["import-map"];
-let target = args["target"] ? args["target"].split(",") : null;
-
-// Replace relative with absolute paths
-const cwd = Deno.cwd();
-if (!isAbsolute(inFile)) {
-  inFile = join(cwd, inFile)
-}
-if (!isAbsolute(outFile)) {
-  outFile = join(cwd, outFile)
-}
-if (importMap && !isAbsolute(importMap)) {
-  importMap = join('file://', cwd, importMap)
-}
-if (!isAbsolute(serveDir)) {
-  serveDir = join(cwd, serveDir)
-}
-
-if (generateTsConfig) {
-  // tsconfig.json for deno+browser
-  const tsConfig = {
-    "compilerOptions": {
-      "target": "es6",
-      "lib": ["dom", "esnext", "deno.ns"]
-    },
-    // "include": ["src"]
-  }
-  const str = JSON.stringify(tsConfig, null, 2);
-  console.log(str);
-  if (args["out"]) {
-    await Deno.writeTextFile(outFile, str);
-  }
-  Deno.exit(0);
-}
+import { compileMdx, mdxPlugin } from './plugin-mdx.ts'
+import { compileReactStatic } from "./plugin-react-static.tsx";
 
 const isDev = Deno.env.get("DENO_ENV") === "development";
-const isWatch = args["watch"]
-const isServe = args["serve"] || args["serve-only"]
-const isServeOnly = args["serve-only"]
 let isFirstBuild = true;
 
-if (import.meta.main) {
+const DEFAULT_IN_FILES = ["src/app.ts", "src/app.tsx", "src/index.ts", "src/index.tsx", "src/main.ts", "src/main.tsx", "src/mod.ts", "src/mod.tsx"];
+const DEFAULT_IN_FOLDER = "src/";
+const DEFAULT_OUT_FILE = "public/app.js";
+const DEFAULT_STATIC_FILE = "public/index.html";
+const DEFAULT_SERVE_DIR = "public";
+
+export type BuildOptions = {
+  watch?: boolean; // watch for changes
+  serve?: "only" | boolean; // serve only, or serve and build
+  importMap?: string; // import map (e.g. importMap.json)
+  target?: string; // esbuild target (e.g. chrome99, firefox99, safari15)
+
+  inFile: string; // input file (e.g. src/app.tsx)
+  outFile?: string; // output file (e.g. public/app.js)
+  serveDir?: string; // directory to serve (e.g. public)
+
+  plugins?: esbuild.Plugin[]; // additional esbuild plugins
+}
+
+export const build = async (options: BuildOptions) => {
+  const {
+    watch,
+    serve: shouldServe,
+    importMap,
+    target,
+    inFile,
+    outFile = DEFAULT_OUT_FILE,
+    serveDir = DEFAULT_SERVE_DIR,
+    plugins = [],
+  } = options;
+
   // Generate directories recursively if they don't exist
   const outDir = outFile.substring(0, outFile.lastIndexOf("/"));
   await Deno.mkdir(outDir, { recursive: true });
 
   const opts: esbuild.BuildOptions = {
-    plugins: [...denoPlugins(importMap ? {
-      "importMapURL": importMap,
-    } : {})],
+    plugins: [
+      denoResolverPlugin(importMap ? {
+        importMapURL: importMap,
+      } : {}),
+      ...plugins,
+      denoLoaderPlugin({})
+    ],
     entryPoints: [inFile],
     outfile: outFile,
     bundle: true,
@@ -109,7 +62,7 @@ if (import.meta.main) {
     platform: "browser",
     treeShaking: true,
     minify: !isDev,
-    jsx: "automatic",
+    jsx: "automatic"
   };
 
   const result = await esbuild.context(opts);
@@ -122,8 +75,10 @@ if (import.meta.main) {
       await result.rebuild();
       isFirstBuild = false;
       const dt = performance.now() - startTime;
-      console.log(`Built in: ${dt.toFixed(2)}ms`);
+      console.log(`%c✅ Built in: ${dt.toFixed(2)}ms`, `color: green`);
     } catch (e) {
+      const dt = performance.now() - startTime;
+      console.error(`%c🚨 Build error after ${dt.toFixed(2)}ms`, `color: red; font-weight: bold`);
       console.error(e);
     }
   };
@@ -132,7 +87,7 @@ if (import.meta.main) {
     // Just serve and don't terminate
     setServeDir(serveDir);
     await serve()
-    Deno.exit(0);
+    return;
   }
 
   const serveBackground = () => {
@@ -143,23 +98,23 @@ if (import.meta.main) {
     worker.postMessage({ serveDir });
   }
 
-  if (!isWatch && !isServeOnly) {
+  if (!watch && !shouldServe) {
     // DEFAULT: Build once
     await rebuild();
     esbuild.stop();
   }
 
-  if (isServeOnly || (isServe && !isWatch)) {
+  if ((shouldServe === 'only') || (shouldServe && !watch)) {
     // SERVE-ONLY: Now, serve indefinitely
     await serveBlock();
-    Deno.exit(0)
+    return;
   }
-  else if (!isWatch) {
+  else if (!watch) {
     // DEFAULT: Now exit
-    Deno.exit(0);
+    return;
   }
 
-  if (isServe) {
+  if (shouldServe) {
     // SERVE: Serve in background
     serveBackground();
   }
@@ -196,4 +151,414 @@ if (import.meta.main) {
   }
 
   esbuild.stop();
+}
+
+export const buildMdx = async (options: {
+  inFile?: string; // input file (e.g. src/app.tsx)
+  outFile?: string; // output file (e.g. public/app.js)
+  watch?: boolean; // watch for changes
+}) => {
+  const {
+    inFile = Deno.cwd(),
+    outFile
+    // outFile = DEFAULT_OUT_FILE,
+  } = options;
+
+  const doBuild = async () => {
+    if (inFile.endsWith('.mdx')) {
+      const output = await compileMdx(inFile);
+
+      if (outFile) {
+        await Deno.writeTextFile(outFile, output);
+        return;
+      }
+      else {
+        // file.mdx --> file.jsx (TODO: optional suffix)
+        const filename = inFile.substring(0, inFile.lastIndexOf('.'));
+        const compiledFile = filename + '.jsx';
+        const outDir = compiledFile.substring(0, compiledFile.lastIndexOf("/"));
+        await Deno.mkdir(outDir, { recursive: true });
+        await Deno.writeTextFile(compiledFile, output);
+      }
+    }
+    else {
+      // if directory, then build all mdx files in directory
+      const maybeFolder = await Deno.stat(inFile);
+      if (!maybeFolder.isDirectory) {
+        throw new Error(`Input file must be a .mdx file or a directory containing .mdx files. (got ${inFile})`)
+      }
+      const files = Deno.readDirSync(inFile);
+      for (const file of files) {
+        if (file.isFile && file.name.endsWith('.mdx')) {
+          // file.mdx --> file.jsx (TODO: optional suffix)
+          const startTime = performance.now();
+          const inPath = join(inFile, file.name)
+          let output = ''
+          try {
+            output = await compileMdx(inPath);
+          }
+          catch (e) {
+            console.error("Error compiling file: ", inPath, e)
+            continue;
+          }
+
+          let targetOutFile = outFile;
+          if (!targetOutFile) {
+            // use same directory
+            targetOutFile = inFile;
+          }
+          const filename = file.name.substring(0, file.name.lastIndexOf('.'));
+          const fullfilename = filename + '.jsx'
+          const finalOutFile = join(targetOutFile, fullfilename)
+          // create directory if it doesn't exist
+          const outDir = finalOutFile.substring(0, finalOutFile.lastIndexOf("/"));
+          await Deno.mkdir(outDir, { recursive: true });
+          await Deno.writeTextFile(finalOutFile, output)
+          const endTime = performance.now();
+          const diff = (endTime - startTime).toFixed(2)
+          console.log(`Built file ${fullfilename} in ${diff}ms`)
+        }
+      }
+    }
+  }
+  await doBuild();
+  if (!options.watch) {
+    return;
+  }
+  const watcher = Deno.watchFs(inFile, { recursive: true });
+  for await (const event of watcher) {
+    // if any paths end with .mdx, then rebuild
+    let rebuild = false;
+    for (const path of event.paths) {
+      if (path.endsWith('.mdx')) {
+        rebuild = true;
+        break;
+      }
+    }
+    if (rebuild) { await doBuild(); }
+  }
+}
+
+export const buildReactStatic = async (options: {
+  inFile?: string; // input file (e.g. src/app.tsx)
+  outFile?: string; // output file (e.g. public/app.js)
+  watch?: boolean; // watch for changes
+}) => {
+  const {
+    inFile = Deno.cwd(),
+    outFile = DEFAULT_STATIC_FILE,
+  } = options;
+
+  const doBuild = async () => {
+    if (inFile.endsWith('.tsx')) {
+      const startTime = performance.now();
+      const output = await compileReactStatic(inFile, options.watch);
+
+      if (outFile) {
+        await Deno.writeTextFile(outFile, output);
+      }
+      else {
+        // file.mdx --> file.jsx (TODO: optional suffix)
+        const filename = inFile.substring(0, inFile.lastIndexOf('.'));
+        const compiledFile = filename + '.html';
+        const outDir = compiledFile.substring(0, compiledFile.lastIndexOf("/"));
+        await Deno.mkdir(outDir, { recursive: true });
+        await Deno.writeTextFile(compiledFile, output);
+      }
+      const endTime = performance.now();
+      const diff = (endTime - startTime).toFixed(2)
+      console.log(`Built file ${outFile} in ${diff}ms`)
+    }
+    else {
+      // if directory, then build first tsx file found
+      const maybeFolder = await Deno.stat(inFile);
+      if (!maybeFolder.isDirectory) {
+        throw new Error(`Input file must be a .mdx file or a directory containing .mdx files. (got ${inFile})`)
+      }
+      const files = Deno.readDirSync(inFile);
+      for (const file of files) {
+        if (file.isFile && file.name.endsWith('.tsx')) {
+          const startTime = performance.now();
+          const inPath = join(inFile, file.name)
+          let output = ''
+          try {
+            output = await compileReactStatic(inPath, options.watch)
+          }
+          catch (e) {
+            console.error("Error compiling file: ", inPath, e)
+            continue;
+          }
+
+          let targetOutFile = outFile;
+          if (!targetOutFile) {
+            // use same directory
+            targetOutFile = inFile;
+          }
+          const filename = file.name.substring(0, file.name.lastIndexOf('.'));
+          const fullfilename = filename + '.html'
+          const finalOutFile = join(targetOutFile, fullfilename)
+          // create directory if it doesn't exist
+          const outDir = finalOutFile.substring(0, finalOutFile.lastIndexOf("/"));
+          await Deno.mkdir(outDir, { recursive: true });
+          await Deno.writeTextFile(finalOutFile, output)
+          const endTime = performance.now();
+          const diff = (endTime - startTime).toFixed(2)
+          console.log(`Built file ${fullfilename} in ${diff}ms`)
+
+          break; // only build first file
+        }
+      }
+    }
+  }
+  await doBuild();
+  if (!options.watch) {
+    return;
+  }
+  const watcher = Deno.watchFs(inFile, { recursive: true });
+  for await (const event of watcher) {
+    // if any paths end with .mdx, then rebuild
+    let rebuild = false;
+    for (const path of event.paths) {
+      if (path.endsWith('.tsx')) {
+        rebuild = true;
+        break;
+      }
+    }
+    if (rebuild) { await doBuild(); }
+  }
+}
+
+if (import.meta.main) {
+  const helpText = `dsbuild - Deno + esbuild
+
+This is a simple build tool for Deno + esbuild. It compiles Deno TypeScript 
+to a single JavaScript file that can be run in the browser.
+
+Example usage:
+ \`dsbuild --in src/app.ts --out public/app.js\`
+   - Build \`src/app.ts\` to \`public/app.js\`
+
+ \`dsbuild --live\`
+   - Live reloads \`src/app.ts\` as you make changes.
+
+ \`dsbuild --live --serve\`
+   - Live build and serve \`public/\` on \`localhost:8080\`
+
+ \`dsbuild --serve-only\`
+   - Serve \`public/\` on \`localhost:8080\` without building
+
+ \`dsbuild --import-map import-map.json\`
+   - Build with import map
+
+ \`dsbuild --tsconfig\`
+   - Generate a tsconfig.json you can use for Deno + browser development
+
+  \`dsbuild --denoconfig\`
+    - Generate a deno.json you can use for Deno + browser development
+
+ \`dsbuild --init=react\`
+    - Initialize a React project (can also be \`mdx\`, \`node\`, \'basic\', \`react-static\`)
+`
+
+  const args = parseArgs(Deno.args);
+
+  const isHelp = args["help"] || args["h"];
+
+  if (isHelp) {
+    console.log(helpText);
+    Deno.exit(0);
+  }
+
+  const generateTsConfig = args['tsconfig'] || false;
+  const generateDenoConfig = args['denoconfig'] || false;
+  const init = args['init'] || false;
+
+  let inFile = args["in"] || args["_"].join("")
+  let outFile = args["out"];
+  let serveDir = args["serve-dir"] || DEFAULT_SERVE_DIR;
+  let importMap = args["import-map"];
+  const target = args["target"] ? args["target"].split(",") : null;
+
+  // Replace relative with absolute paths
+  const cwd = Deno.cwd();
+  if (inFile && !isAbsolute(inFile)) {
+    inFile = join(cwd, inFile)
+  }
+  if (outFile && !isAbsolute(outFile)) {
+    outFile = join(cwd, outFile)
+  }
+
+  // Set up default import map
+  if (importMap === "null" || importMap === "false") {
+    importMap = null;
+  }
+  else {
+    if (importMap && !isAbsolute(importMap)) {
+      importMap = join('file://', cwd, importMap)
+    }
+    if (!importMap) {
+      const importMaps = ['import-map.json', 'deno.json'] // NOTE: .jsonc doesn't work yet
+      for (const map of importMaps) {
+        const potentialImportMap = join(cwd, map).replace('file:', '')
+        try {
+          const stat = await Deno.stat(potentialImportMap);
+          if (stat.isFile) {
+            importMap = join('file://', potentialImportMap);
+            break;
+          }
+        }
+        catch (_e) {
+          // ignore
+        }
+      }
+    }
+  }
+
+  if (!isAbsolute(serveDir)) {
+    serveDir = join(cwd, serveDir)
+  }
+
+  if (init) {
+    const initStr = typeof init === 'string' ? init : 'basic'
+    const rootDir = join(import.meta.url, '..').replace('file:', '')
+    const exampleDir = join(rootDir, 'examples', initStr).replace('file:', '')
+    // recursively copy files from ./examples/[example] to cwd
+    const files = Deno.readDirSync(exampleDir);
+    const copyFileOrFolder = async (src: string, dest: string) => {
+      if (src.endsWith('.gitignore' || src.endsWith('.git'))) {
+        return;
+      }
+      const stat = await Deno.stat(src);
+      if (stat.isFile) {
+        const contents = await Deno.readTextFile(src)
+        console.log(`Copying ${src} to ${dest} (file)`)
+        try {
+          const isForce = args['force'] || false;
+          await Deno.writeTextFile(dest, contents, {
+            createNew: isForce ? undefined : true,
+          });
+        } catch (e) {
+          console.error(`Error copying ${src} to ${dest}: ${e}`)
+          console.error('You already have one of these files already at your destination. Please only use --init from an empty directory. (or use "--force" to overwrite existing files)')
+          Deno.exit(1);
+        }
+      }
+      else if (stat.isDirectory) {
+        await Deno.mkdir(dest, { recursive: true })
+        const files = Deno.readDirSync(src);
+        console.log(`Copying ${src} to ${dest} (directory)`)
+        for (const file of files) {
+          const srcPath = join(src, file.name)
+          const destPath = join(dest, file.name)
+          await copyFileOrFolder(srcPath, destPath)
+        }
+      }
+    }
+    for (const file of files) {
+      await copyFileOrFolder(join(exampleDir, file.name), join(cwd, file.name))
+    }
+    Deno.exit(0);
+  }
+
+  if (generateTsConfig) {
+    // tsconfig.json for deno+browser dev
+    const tsConfig = {
+      "compilerOptions": {
+        "target": "es6",
+        "lib": ["dom", "dom.iterable", "esnext", "deno.ns"],
+        "jsx": "react-jsxdev",
+        "jsxImportSource": "react"
+      },
+      // "include": ["src"]
+    }
+    const str = JSON.stringify(tsConfig, null, 2);
+    console.log(str);
+    if (args["out"]) {
+      await Deno.writeTextFile(outFile, str);
+    }
+    Deno.exit(0);
+  }
+
+  if (generateDenoConfig) {
+    const denoConfig = {
+      "compilerOptions": {
+        "lib": ["dom", "dom.iterable", "dom.asynciterable", "esnext", "deno.ns"],
+        "jsx": "react-jsxdev",
+        "jsxImportSource": "react"
+      },
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0?dev",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?dev",
+        "react/": "https://esm.sh/react@18.2.0/",
+        "react-dom": "https://esm.sh/react-dom@18.2.0?dev"
+      }
+    }
+
+    const str = JSON.stringify(denoConfig, null, 2);
+    console.log(str);
+    if (args["out"]) {
+      await Deno.writeTextFile(outFile, str);
+    }
+    Deno.exit(0);
+  }
+
+  const isWatch = args["live"] || args["watch"] || args["w"] || args["l"];
+  const isServe = args["serve"] || args["serve-only"] || args["s"];
+  const isServeOnly = args["serve-only"]
+  const isMdx = args["mdx"]
+  const isReactStatic = args["react-static"]
+
+  if (isMdx) {
+    await buildMdx({
+      inFile: inFile || DEFAULT_IN_FOLDER,
+      outFile,
+      watch: isWatch
+    });
+    Deno.exit(0);
+  }
+
+  if (isReactStatic) {
+    await buildReactStatic({
+      inFile: inFile || DEFAULT_IN_FOLDER,
+      outFile,
+      watch: isWatch
+    });
+    Deno.exit(0);
+  }
+
+  if (!inFile) {
+    // Look for default input file
+    for (const file of DEFAULT_IN_FILES) {
+      try {
+        const stat = await Deno.stat(file);
+        if (stat.isFile) {
+          inFile = file;
+          break;
+        }
+      }
+      catch (_e) {
+        // ignore
+      }
+    }
+  }
+
+  if (!inFile) {
+    console.error("No input file found. Use --in to specify an input file.")
+    Deno.exit(1);
+  }
+
+  await build({
+    watch: isWatch,
+    serve: isServeOnly ? "only" : isServe,
+    importMap,
+    target,
+    inFile: inFile,
+    outFile,
+    serveDir,
+    plugins: [
+      mdxPlugin,
+    ]
+  });
+
+  Deno.exit(0);
 }
