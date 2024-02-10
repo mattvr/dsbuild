@@ -1,6 +1,6 @@
 /* dsbuild - Deno + esbuild */
 
-import { esbuild } from './deps.ts'
+import { dirname, esbuild } from './deps.ts'
 import { denoLoaderPlugin, denoResolverPlugin } from './deps.ts'
 import { parseArgs } from "./deps.ts";
 import { isAbsolute, join, resolve, normalize } from "./deps.ts";
@@ -12,9 +12,9 @@ const isDev = Deno.env.get("DENO_ENV") === "development";
 let isFirstBuild = true;
 
 const DEFAULT_IN_FILES = ["src/app.ts", "src/app.tsx", "src/index.ts", "src/index.tsx", "src/main.ts", "src/main.tsx", "src/mod.ts", "src/mod.tsx"];
-const DEFAULT_IN_FOLDER = "src/";
-const DEFAULT_OUT_FILE = "public/app.js";
-const DEFAULT_STATIC_FILE = "public/index.html";
+const DEFAULT_IN_FOLDER = "src";
+const DEFAULT_OUT_FILE = join("public", "app.js");
+const DEFAULT_STATIC_FILE = join("public", "index.html");
 const DEFAULT_SERVE_DIR = "public";
 
 export type BuildOptions = {
@@ -43,7 +43,7 @@ export const build = async (options: BuildOptions) => {
   } = options;
 
   // Generate directories recursively if they don't exist
-  const outDir = outFile.substring(0, outFile.lastIndexOf("/"));
+  const outDir = dirname(outFile)
   await Deno.mkdir(outDir, { recursive: true });
 
   const opts: esbuild.BuildOptions = {
@@ -92,7 +92,7 @@ export const build = async (options: BuildOptions) => {
 
   const serveBackground = () => {
     // Start a separate worker to serve the files
-    const worker = new Worker(new URL("./serve.ts", import.meta.url).href, {
+    const worker = new Worker(new URL("serve.ts", import.meta.url).href, {
       type: "module",
     });
     worker.postMessage({ serveDir });
@@ -135,7 +135,7 @@ export const build = async (options: BuildOptions) => {
 
   debounceRebuild();
 
-  const inDir = inFile.substring(0, inFile.lastIndexOf("/"));
+  const inDir = dirname(inFile)
 
   const arePathsEqual = (path1: string, path2: string) => {
     return normalize(resolve(path1)) === normalize(resolve(path2));
@@ -176,7 +176,7 @@ export const buildMdx = async (options: {
         // file.mdx --> file.jsx (TODO: optional suffix)
         const filename = inFile.substring(0, inFile.lastIndexOf('.'));
         const compiledFile = filename + '.jsx';
-        const outDir = compiledFile.substring(0, compiledFile.lastIndexOf("/"));
+        const outDir = dirname(compiledFile);
         await Deno.mkdir(outDir, { recursive: true });
         await Deno.writeTextFile(compiledFile, output);
       }
@@ -211,7 +211,7 @@ export const buildMdx = async (options: {
           const fullfilename = filename + '.jsx'
           const finalOutFile = join(targetOutFile, fullfilename)
           // create directory if it doesn't exist
-          const outDir = finalOutFile.substring(0, finalOutFile.lastIndexOf("/"));
+          const outDir = dirname(finalOutFile);
           await Deno.mkdir(outDir, { recursive: true });
           await Deno.writeTextFile(finalOutFile, output)
           const endTime = performance.now();
@@ -261,7 +261,7 @@ export const buildReactStatic = async (options: {
         // file.mdx --> file.jsx (TODO: optional suffix)
         const filename = inFile.substring(0, inFile.lastIndexOf('.'));
         const compiledFile = filename + '.html';
-        const outDir = compiledFile.substring(0, compiledFile.lastIndexOf("/"));
+        const outDir = dirname(compiledFile);
         await Deno.mkdir(outDir, { recursive: true });
         await Deno.writeTextFile(compiledFile, output);
       }
@@ -298,7 +298,7 @@ export const buildReactStatic = async (options: {
           const fullfilename = filename + '.html'
           const finalOutFile = join(targetOutFile, fullfilename)
           // create directory if it doesn't exist
-          const outDir = finalOutFile.substring(0, finalOutFile.lastIndexOf("/"));
+          const outDir = dirname(finalOutFile);
           await Deno.mkdir(outDir, { recursive: true });
           await Deno.writeTextFile(finalOutFile, output)
           const endTime = performance.now();
@@ -529,8 +529,9 @@ Example usage:
   if (!inFile) {
     // Look for default input file
     for (const file of DEFAULT_IN_FILES) {
+      const path = join(...file.split('/'))
       try {
-        const stat = await Deno.stat(file);
+        const stat = await Deno.stat(path);
         if (stat.isFile) {
           inFile = file;
           break;

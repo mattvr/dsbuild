@@ -7,7 +7,7 @@ import { compile as compileMdx } from "https://esm.sh/@mdx-js/mdx@3.0.0"
 import { renderToStaticMarkup as compileReactStatic } from "https://esm.sh/react-dom@18.2.0/server"
 import { denoLoaderPlugin, denoResolverPlugin } from "https://deno.land/x/esbuild_deno_loader@0.8.2/mod.ts";
 import {parseArgs} from "https://deno.land/std@0.208.0/cli/parse_args.ts";
-import { isAbsolute, join, resolve, normalize } from "https://deno.land/std@0.208.0/path/mod.ts";
+import { isAbsolute, join, resolve, normalize, dirname } from "https://deno.land/std@0.208.0/path/mod.ts";
 import React from "https://esm.sh/react@18.2.0";
 
 export {
@@ -33,4 +33,5 @@ export {
   join,
   resolve,
   normalize,
+  dirname
 }
