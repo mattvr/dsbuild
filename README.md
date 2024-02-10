@@ -4,13 +4,13 @@
 
 ---
 
-`dsbuild` is a simple, fast static site generator.
+`dsbuild` is a simple, fast static site builder.
 
 It compiles any [Deno](https://deno.land/) TypeScript (or Markdown) into a
 single JavaScript file that can be run in the browser.
 
 It's a one-command, zero-configuration way to build React, Markdown, or other
-JS-powered web sites entirely in Deno.
+JS-powered web sites entirely using Deno.
 
 **Features:**
 
