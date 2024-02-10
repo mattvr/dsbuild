@@ -24,6 +24,8 @@ JS-powered web sites entirely using Deno.
   [`esbuild_deno_loader`](https://github.com/lucacasonato/esbuild_deno_loader)
   under the hood.
 
+<br /><br />
+
 ## Installation
 
 1. Install the
@@ -36,6 +38,8 @@ deno install -frA -n dsbuild https://deno.land/x/dsbuild/mod.ts
 ```
 
 3. Ensure `$HOME/.deno/bin` is in your `PATH` environment variable.
+
+<br /><br />
 
 ## Usage
 
@@ -95,6 +99,8 @@ other JS-powered web sites.
 
   - Builds without minification.
 
+<br /><br />
+
 ## Quick Start
 
 Check out the `examples/` folder for a demo, after `git clone`-ing this repo and
@@ -102,6 +108,8 @@ installing `dsbuild`.
 
 Inside the folder, run `dsbuild --serve --watch`, make changes to `src/app.ts`,
 and you should see the page immediately update.
+
+<br /><br />
 
 ## Contributors
 
