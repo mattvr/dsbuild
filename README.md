@@ -1,7 +1,7 @@
 <p align="center"><a href="https://github.com/mattvr/dsbuild">
 <img src="/dsbuild.svg" ></a></p>
 <p align="center"><strong>Run Deno code in the browser. Fast & simple.</strong></p>
-<h4 align="center"><strong><a href="https://discord.gg/JyuM6KA5hp"><img src="https://github.com/mattvr/ShellGPT/assets/4052466/9ba871c8-451c-4178-9035-645142b617d9" /> Discord </a></strong></h4>
+<h4 align="center"><strong><a href="https://orgsoft.org/discord"><img src="https://github.com/mattvr/ShellGPT/assets/4052466/9ba871c8-451c-4178-9035-645142b617d9" /> Discord </a></strong></h4>
 
 ---
 
