@@ -10,7 +10,7 @@ self.addEventListener("message", (e: any) => {
   setServeDir(serveDir_)
 })
 
-const serveFile = async (req: Request) => {
+const serveFile = async (req: Request): Promise<Response> => {
   // const startTime = performance.now();
   const headers = new Headers({
     "X-Deno-Version": Deno.version.deno,
@@ -56,7 +56,7 @@ const serveFile = async (req: Request) => {
   });
 }
 
-export const serve = () => {
+export const serve = (): Promise<void> => {
   return Deno.serve(serveFile).finished
 }
 

@@ -7,6 +7,7 @@ import { isAbsolute, join, resolve, normalize } from "./deps.ts";
 import { serve, setServeDir } from "./serve.ts";
 import { compileMdx, mdxPlugin } from './plugin-mdx.ts'
 import { compileReactStatic } from "./plugin-react-static.tsx";
+import { extname, parse } from "https://deno.land/std@0.208.0/path/mod.ts";
 
 const isDev = Deno.env.get("DENO_ENV") === "development";
 let isFirstBuild = true;
@@ -14,6 +15,7 @@ let isFirstBuild = true;
 const DEFAULT_IN_FILES = ["src/app.ts", "src/app.tsx", "src/index.ts", "src/index.tsx", "src/main.ts", "src/main.tsx", "src/mod.ts", "src/mod.tsx"];
 const DEFAULT_IN_FOLDER = "src";
 const DEFAULT_OUT_FILE = join("public", "app.js");
+const DEFAULT_CSS_FILE = join("public", "app.css");
 const DEFAULT_STATIC_FILE = join("public", "index.html");
 const DEFAULT_SERVE_DIR = "public";
 
@@ -24,10 +26,13 @@ export type BuildOptions = {
   target?: string; // esbuild target (e.g. chrome99, firefox99, safari15)
 
   inFile: string; // input file (e.g. src/app.tsx)
-  outFile?: string; // output file (e.g. public/app.js)
+  outFile: string; // output file (e.g. public/app.js)
   serveDir?: string; // directory to serve (e.g. public)
+  hash?: boolean; // use hash in output file
 
   plugins?: esbuild.Plugin[]; // additional esbuild plugins
+  logLevel?: esbuild.LogLevel; // log level
+  ignoredWarnings?: string[]; // ignored warnings
 }
 
 export const build = async (options: BuildOptions) => {
@@ -37,9 +42,11 @@ export const build = async (options: BuildOptions) => {
     importMap,
     target,
     inFile,
-    outFile = DEFAULT_OUT_FILE,
+    outFile,
     serveDir = DEFAULT_SERVE_DIR,
     plugins = [],
+    hash,
+    logLevel,
   } = options;
 
   // Generate directories recursively if they don't exist
@@ -62,7 +69,8 @@ export const build = async (options: BuildOptions) => {
     platform: "browser",
     treeShaking: true,
     minify: !isDev,
-    jsx: "automatic"
+    jsx: "automatic",
+    logLevel
   };
 
   const result = await esbuild.context(opts);
@@ -73,6 +81,27 @@ export const build = async (options: BuildOptions) => {
     try {
       // rebuild
       await result.rebuild();
+
+      if (hash) {
+        // Add hash to output file
+        const { name, ext } = parse(outFile);
+        const hash = Math.random().toString(36).substring(2, 8);
+        const newOutFile = join(outDir, `${name}.${hash}${ext}`);
+        await Deno.rename(outFile, newOutFile);
+        // console.log(`Renamed ${outFile} to ${newOutFile}`);
+
+        // Delete old files (SKIP new file)
+        const files = Deno.readDirSync(outDir);
+        for (const file of files) {
+          const { name: fileName, ext: fileExt } = parse(file.name);
+          if (file.isFile && fileName.startsWith(name + '.') && fileExt === ext && file.name !== `${name}.${hash}${ext}`) {
+            const oldFile = join(outDir, file.name);
+            await Deno.remove(oldFile);
+            // console.log(`Removed old file: ${oldFile}`);
+          }
+        }
+      }
+
       isFirstBuild = false;
       const dt = performance.now() - startTime;
       console.log(`%c✅ Built in: ${dt.toFixed(2)}ms`, `color: green`);
@@ -146,7 +175,20 @@ export const build = async (options: BuildOptions) => {
   }
 
   const watcher = Deno.watchFs(inDir, { recursive: true });
-  for await (const _event of watcher) {
+  for await (const event of watcher) {
+    // Skip events for files that might be output files (i.e. name and extension are similar, ignoring hash)
+    const paths = event.paths;
+    const isOutputFile = paths.some((path) => {
+      const { name, ext } = parse(path);
+      const nameWithoutHash = name.split('.').slice(0, -1).join('.');
+      const outFileName = parse(outFile).name;
+      const isSimilar = (nameWithoutHash === outFileName || name === outFileName) && extname(outFile) === ext;
+      return isSimilar;
+    });
+    if (isOutputFile) {
+      continue;
+    }
+
     debounceRebuild();
   }
 
@@ -207,11 +249,14 @@ export const buildMdx = async (options: {
             // use same directory
             targetOutFile = inFile;
           }
+          if (extname(targetOutFile) !== '.jsx') {
+            targetOutFile = join(targetOutFile, file.name.substring(0, file.name.lastIndexOf('.')) + '.jsx')
+          }
           const filename = file.name.substring(0, file.name.lastIndexOf('.'));
           const fullfilename = filename + '.jsx'
-          const finalOutFile = join(targetOutFile, fullfilename)
           // create directory if it doesn't exist
-          const outDir = dirname(finalOutFile);
+          const outDir = dirname(targetOutFile);
+          const finalOutFile = join(outDir, fullfilename)
           await Deno.mkdir(outDir, { recursive: true });
           await Deno.writeTextFile(finalOutFile, output)
           const endTime = performance.now();
@@ -239,6 +284,64 @@ export const buildMdx = async (options: {
   }
 }
 
+export const buildCss = async (options: {
+  inFile?: string; // input file (e.g. src/app.css)
+  outFile?: string; // output file (e.g. public/app.css)
+  watch?: boolean; // watch for changes
+}) => {
+  const {
+    inFile = Deno.cwd(),
+    outFile = 'public/app.css',
+    watch = false,
+  } = options;
+
+  const doBuild = async () => {
+    const maybeFolder = await Deno.stat(inFile);
+    if (!maybeFolder.isDirectory) {
+      throw new Error(`Input file must be a directory containing CSS files. (got ${inFile})`);
+    }
+
+    const cssFiles: string[] = [];
+    for await (const entry of Deno.readDir(inFile)) {
+      if (entry.isFile && entry.name.endsWith(".css")) {
+        cssFiles.push(entry.name);
+      }
+    }
+
+    cssFiles.sort((a, b) => {
+      const orderA = a.split(".").length;
+      const orderB = b.split(".").length;
+      if (orderA === orderB) {
+        return a.localeCompare(b);
+      }
+      return orderA - orderB;
+    });
+
+    let combinedCss = "";
+    for (const file of cssFiles) {
+      const filePath = join(inFile, file);
+      const cssContent = await Deno.readTextFile(filePath);
+      combinedCss += cssContent + "\n";
+    }
+
+    const outDir = dirname(outFile);
+    await Deno.mkdir(outDir, { recursive: true });
+    await Deno.writeTextFile(outFile, combinedCss);
+
+    console.log(`Built CSS file: ${outFile}`);
+  };
+
+  await doBuild();
+
+  if (watch) {
+    const watcher = Deno.watchFs(inFile, { recursive: true });
+    for await (const event of watcher) {
+      if (event.kind === "modify" || event.kind === "create" || event.kind === "remove") {
+        await doBuild();
+      }
+    }
+  }
+};
 export const buildReactStatic = async (options: {
   inFile?: string; // input file (e.g. src/app.tsx)
   outFile?: string; // output file (e.g. public/app.js)
@@ -377,7 +480,16 @@ Example usage:
   let outFile = args["out"];
   let serveDir = args["serve-dir"] || DEFAULT_SERVE_DIR;
   let importMap = args["import-map"];
+  let useHash = args["hash"];
+  let logLevel = args["log-level"] || "info";
   const target = args["target"] ? args["target"].split(",") : null;
+
+  const isWatch = args["live"] || args["watch"] || args["w"] || args["l"];
+  const isServe = args["serve"] || args["serve-only"] || args["s"];
+  const isServeOnly = args["serve-only"]
+  const isMdx = args["mdx"]
+  const isReactStatic = args["react-static"]
+  const isCss = args["css"]
 
   // Replace relative with absolute paths
   const cwd = Deno.cwd();
@@ -386,6 +498,12 @@ Example usage:
   }
   if (outFile && !isAbsolute(outFile)) {
     outFile = join(cwd, outFile)
+  }
+  if (!outFile && isCss) {
+    outFile = DEFAULT_CSS_FILE;
+  }
+  else if (!outFile) {
+    outFile = DEFAULT_OUT_FILE;
   }
 
   // Set up default import map
@@ -502,12 +620,6 @@ Example usage:
     Deno.exit(0);
   }
 
-  const isWatch = args["live"] || args["watch"] || args["w"] || args["l"];
-  const isServe = args["serve"] || args["serve-only"] || args["s"];
-  const isServeOnly = args["serve-only"]
-  const isMdx = args["mdx"]
-  const isReactStatic = args["react-static"]
-
   if (isMdx) {
     await buildMdx({
       inFile: inFile || DEFAULT_IN_FOLDER,
@@ -519,6 +631,15 @@ Example usage:
 
   if (isReactStatic) {
     await buildReactStatic({
+      inFile: inFile || DEFAULT_IN_FOLDER,
+      outFile,
+      watch: isWatch
+    });
+    Deno.exit(0);
+  }
+
+  if (isCss) {
+    await buildCss({
       inFile: inFile || DEFAULT_IN_FOLDER,
       outFile,
       watch: isWatch
@@ -543,7 +664,7 @@ Example usage:
     }
   }
 
-  if (!inFile) {
+  if (!inFile && !isServeOnly) {
     console.error("No input file found. Use --in to specify an input file.")
     Deno.exit(1);
   }
@@ -555,10 +676,12 @@ Example usage:
     target,
     inFile: inFile,
     outFile,
+    hash: useHash,
     serveDir,
     plugins: [
       mdxPlugin,
-    ]
+    ],
+    logLevel
   });
 
   Deno.exit(0);

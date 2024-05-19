@@ -2,7 +2,7 @@ import { esbuild, compileMdx as compileMdx_ } from './deps.ts'
 
 export const compileMdxText = (text: string) => compileMdx_(text).then((result) => result.value) as Promise<string>;
 
-export const compileMdx = async (path: string, withCache = true /* todo */) => {
+export const compileMdx = async (path: string, withCache = true /* todo */): Promise<string> => {
   const compiled = await compileMdxText(await Deno.readTextFile(path))
 
   return compiled
