@@ -7,7 +7,9 @@ import { isAbsolute, join, resolve, normalize } from "./deps.ts";
 import { serve, setServeDir } from "./serve.ts";
 import { compileMdx, mdxPlugin } from './plugin-mdx.ts'
 import { compileReactStatic } from "./plugin-react-static.tsx";
-import { extname, parse } from "https://deno.land/std@0.208.0/path/mod.ts";
+import { extname, parse } from "./deps.ts";
+
+export const VERSION = "0.1.2"
 
 const isDev = Deno.env.get("DENO_ENV") === "development";
 let isFirstBuild = true;
@@ -432,7 +434,7 @@ export const buildReactStatic = async (options: {
 }
 
 if (import.meta.main) {
-  const helpText = `dsbuild - Deno + esbuild
+  const helpText = `dsbuild (Deno + esbuild) v${VERSION}
 
 This is a simple build tool for Deno + esbuild. It compiles Deno TypeScript 
 to a single JavaScript file that can be run in the browser.
@@ -466,9 +468,14 @@ Example usage:
   const args = parseArgs(Deno.args);
 
   const isHelp = args["help"] || args["h"];
+  const isVersion = args["version"] || args["v"];
 
   if (isHelp) {
     console.log(helpText);
+    Deno.exit(0);
+  }
+  if (isVersion) {
+    console.log(VERSION);
     Deno.exit(0);
   }
 

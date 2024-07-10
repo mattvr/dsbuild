@@ -1,14 +1,10 @@
-// Import the WASM build on platforms where running subprocesses is not
-// permitted, such as Deno Deploy, or when running without `--allow-run`.
-import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
-// import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/wasm.js";
-
+import * as esbuild from "npm:esbuild@^0.23.0"
 import { compile as compileMdx } from "https://esm.sh/@mdx-js/mdx@3.0.0"
 import { renderToStaticMarkup as compileReactStatic } from "https://esm.sh/react-dom@18.2.0/server"
-import { denoLoaderPlugin, denoResolverPlugin } from "https://deno.land/x/esbuild_deno_loader@0.8.2/mod.ts";
-import {parseArgs} from "https://deno.land/std@0.208.0/cli/parse_args.ts";
-import { isAbsolute, join, resolve, normalize, dirname } from "https://deno.land/std@0.208.0/path/mod.ts";
+import { denoLoaderPlugin, denoResolverPlugin } from "jsr:@luca/esbuild-deno-loader@^0.10.3";
 import React from "https://esm.sh/react@18.2.0";
+import {parseArgs} from "jsr:@std/cli@^0.224.7/parse-args";
+import { isAbsolute, join, resolve, normalize, dirname, extname, parse } from 'jsr:@std/path@^0.225.2'
 
 export {
   // esbuild
@@ -33,5 +29,7 @@ export {
   join,
   resolve,
   normalize,
-  dirname
+  dirname,
+  extname,
+  parse
 }
