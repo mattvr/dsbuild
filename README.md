@@ -18,7 +18,7 @@ JS-powered web sites entirely using Deno.
 - Supports TypeScript, MDX (Markdown), JSX, and React out of the box.
 - Automatic rebuilds as you develop (`dsbuild --watch`)
 - Previewing via a simple included web server (`dsbuild --serve`)
-- URL imports using `https://`, `file://`, `npm:`, and import maps.
+- URL imports using `https://`, `file://`, `npm:`, `jsr:`, and import maps.
 - Full support for Deno syntax and modules that don't require the `Deno`
   namespace or system APIs.
 - Powered by [`esbuild`](https://esbuild.github.io/) and
