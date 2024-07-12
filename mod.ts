@@ -9,7 +9,7 @@ import { compileMdx, mdxPlugin } from './plugin-mdx.ts'
 import { compileReactStatic } from "./plugin-react-static.tsx";
 import { extname, parse } from "./deps.ts";
 
-export const VERSION = "0.1.2"
+export const VERSION = "0.1.3"
 
 const isDev = Deno.env.get("DENO_ENV") === "development";
 let isFirstBuild = true;
