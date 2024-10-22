@@ -1,26 +1,20 @@
 /* dsbuild - Deno + esbuild */
 
-import { dirname, esbuild, initCss, transformCss } from "./deps.ts";
-import { denoLoaderPlugin, denoResolverPlugin } from "./deps.ts";
-import { parseArgs } from "./deps.ts";
-import { isAbsolute, join, resolve, normalize } from "./deps.ts";
-import { serve, setServeDir } from "./serve.ts";
+import { isAbsolute, join, parseArgs } from "./deps.ts";
+import { buildCss } from "./plugin-css.ts";
+import { build } from "./plugin-main.ts";
 import { buildMdx, mdxPlugin } from "./plugin-mdx.ts";
 import { buildReactStatic } from "./plugin-react-static.tsx";
-import { build } from "./plugin-main.ts";
-import { buildCss } from "./plugin-css.ts";
-import { extname, parse } from "./deps.ts";
 import {
-  DSBUILD_VERSION,
-  IS_DEV,
+  DEFAULT_CSS_FILE,
   DEFAULT_IN_FILES,
   DEFAULT_IN_FOLDER,
   DEFAULT_OUT_FILE,
-  DEFAULT_STATIC_FILE,
   DEFAULT_SERVE_DIR,
-  DEFAULT_CSS_FILE,
-  REACT_TS_CONFIG,
+  DEFAULT_STATIC_FILE,
+  DSBUILD_VERSION,
   REACT_STATIC_TS_CONFIG_DEV,
+  REACT_TS_CONFIG
 } from "./stuff.ts";
 
 if (import.meta.main) {
