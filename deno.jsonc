@@ -1,6 +1,6 @@
 {
-  "name": "@mattvr/dsbuild",
-  "version": "0.2.1",
+  "name": "@orgsoft/dsbuild",
+  "version": "0.2.2",
   "exports": "./mod.ts",
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "dom.asynciterable", "esnext", "deno.ns"],
@@ -8,7 +8,7 @@
     "jsxImportSource": "react"
   },
   "tasks": {
-    "install": "deno install -frAg --name dsbuild mod.ts",
+    "install": "deno install -frAg --name dsbuild mod.ts"
   },
   "imports": {
     "react": "https://esm.sh/v119/react@18.2.0?dev",

@@ -56,6 +56,10 @@ other JS-powered web sites.
 
   - Watches `src/` directory and rebuilds on changes.
 
+- ### `dsbuild --watch=src/ui,src/api`
+  
+  - Watches `src/ui` and `src/api` and rebuilds on changes.
+
 - ### `dsbuild --watch --serve` (or `dsbuild -ws`)
 
   - Watch and serve `public/` on `localhost:8000`.

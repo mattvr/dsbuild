@@ -85,7 +85,8 @@ Example usage:
   let logLevel = args["log-level"] || "info";
   const target = args["target"] ? args["target"].split(",") : null;
 
-  const isWatch = args["live"] || args["watch"] || args["w"] || args["l"];
+  const watchArg = args["live"] || args["watch"] || args["w"] || args["l"];
+  const isWatch = typeof watchArg === "string" ? watchArg : watchArg !== undefined;
   const isServe = args["serve"] || args["serve-only"] || args["s"];
   const isServeOnly = args["serve-only"];
   const isMdx = args["mdx"];
@@ -250,7 +251,7 @@ Example usage:
   }
 
   await build({
-    watch: isWatch,
+    watch: watchArg,
     serve: isServeOnly ? "only" : isServe,
     importMap,
     target,

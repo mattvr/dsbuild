@@ -1,14 +1,19 @@
-
 import { dirname, esbuild } from "./deps.ts";
 
-import { denoLoaderPlugin, denoResolverPlugin, extname, join, normalize, parse, resolve } from "./deps.ts";
-import { serve, setServeDir } from "./serve.ts";
 import {
-  DEFAULT_SERVE_DIR,
-  IS_DEV
-} from "./stuff.ts";
+  denoLoaderPlugin,
+  denoResolverPlugin,
+  extname,
+  join,
+  normalize,
+  parse,
+  resolve,
+} from "./deps.ts";
+import { serve, setServeDir } from "./serve.ts";
+import { DEFAULT_SERVE_DIR, IS_DEV } from "./stuff.ts";
+
 export type BuildOptions = {
-  watch?: boolean; // watch for changes
+  watch?: boolean | string; // watch for changes
   serve?: "only" | boolean; // serve only, or serve and build
   importMap?: string; // import map (e.g. importMap.json)
   target?: string; // esbuild target (e.g. chrome99, firefox99, safari15)
@@ -26,7 +31,6 @@ export type BuildOptions = {
   logLevel?: esbuild.LogLevel; // log level
   ignoredWarnings?: string[]; // ignored warnings
 };
-
 
 let isFirstBuild = true;
 
@@ -59,15 +63,15 @@ export const build = async (options: BuildOptions) => {
       denoResolverPlugin(
         importMap
           ? {
-              importMapURL: importMap,
-            }
-          : {}
+            importMapURL: importMap,
+          }
+          : {},
       ),
       ...plugins,
       denoLoaderPlugin({}),
     ],
     entryPoints: split ? inFiles : [inFile],
-    ...((split) ? { outdir: outDir } : { outfile: outFile }),
+    ...(split ? { outdir: outDir } : { outfile: outFile }),
     bundle: true,
     format: "esm",
     outbase: outbase,
@@ -81,7 +85,7 @@ export const build = async (options: BuildOptions) => {
     external,
     // write: false,
     banner: IS_DEV
-      ? { js: "globalThis.window.DENO_ENV === 'development';\n" }
+      ? { js: "globalThis.window.DENO_ENV = 'development';\n" }
       : undefined,
   };
 
@@ -125,7 +129,7 @@ export const build = async (options: BuildOptions) => {
       const dt = performance.now() - startTime;
       console.error(
         `%c🚨 Build error after ${dt.toFixed(2)}ms`,
-        `color: red; font-weight: bold`
+        `color: red; font-weight: bold`,
       );
       console.error(e);
     }
@@ -184,18 +188,20 @@ export const build = async (options: BuildOptions) => {
   debounceRebuild();
 
   const inDir = dirname(inFile);
-
+  const watchDirs = typeof watch === "string"
+    ? watch.split(",").map(normalize)
+    : [inDir];
   const arePathsEqual = (path1: string, path2: string) => {
     return normalize(resolve(path1)) === normalize(resolve(path2));
   };
 
-  if (arePathsEqual(inDir, outDir)) {
+  if (watchDirs.some((dir) => arePathsEqual(dir, outDir))) {
     throw new Error(
-      "Input and output directories cannot be the same when using --watch, will cause infinite loop."
+      "Input watch directory and output directories cannot be the same when using --watch, will cause infinite loop.",
     );
   }
 
-  const watcher = Deno.watchFs(inDir, { recursive: true });
+  const watcher = Deno.watchFs(watchDirs, { recursive: true });
   for await (const event of watcher) {
     // Skip events for files that might be output files (i.e. name and extension are similar, ignoring hash)
     const paths = event.paths;
