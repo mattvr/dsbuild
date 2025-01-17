@@ -35,7 +35,7 @@ JS-powered web sites entirely using Deno.
 2. Run the following command to install dsbuild:
 
 ```sh
-deno install -frAg -n dsbuild https://deno.land/x/dsbuild/mod.ts
+deno install -frAg jsr:@orgsoft/dsbuild
 ```
 
 3. Ensure `$HOME/.deno/bin` is in your `PATH` environment variable.

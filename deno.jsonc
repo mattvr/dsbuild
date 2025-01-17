@@ -1,18 +1,19 @@
 {
   "name": "@orgsoft/dsbuild",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "exports": "./mod.ts",
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "dom.asynciterable", "esnext", "deno.ns"],
     "jsx": "react-jsxdev",
     "jsxImportSource": "react"
   },
+  "vendor": true,
   "tasks": {
     "install": "deno install -frAg --name dsbuild mod.ts"
   },
   "imports": {
-    "react": "npm:react@18.2.0",
-    "react-dom/client": "npm:react-dom@18.2.0/client",
-    "react-dom": "npm:react-dom@18.2.0"
+    "react": "npm:react@^18.3.1",
+    "react-dom/client": "npm:react-dom@18.3.1/client",
+    "react-dom": "npm:react-dom@18.3.1"
   },
 }

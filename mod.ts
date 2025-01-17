@@ -224,7 +224,7 @@ Example usage:
     await buildCss({
       inFile: inFile || DEFAULT_IN_FOLDER,
       outFile,
-      watch: Boolean(isWatch),
+      watch: isWatch,
     });
     Deno.exit(0);
   }
