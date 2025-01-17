@@ -215,7 +215,7 @@ Example usage:
     await buildReactStatic({
       inFile: inFile || DEFAULT_IN_FOLDER,
       outFile,
-      watch: isWatch,
+      watch: Boolean(isWatch),
     });
     Deno.exit(0);
   }
@@ -224,7 +224,7 @@ Example usage:
     await buildCss({
       inFile: inFile || DEFAULT_IN_FOLDER,
       outFile,
-      watch: isWatch,
+      watch: Boolean(isWatch),
     });
     Deno.exit(0);
   }

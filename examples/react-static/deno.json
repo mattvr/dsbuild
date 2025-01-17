@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "build": "dsbuild --in=src/app.tsx --react-static",
-    "run": "dsbuild --in=src/app.tsx --react-static --watch"
+    "build": "dsbuild --in=src/app.tsx --react-static && echo 'Open public/index.html in your browser.'",
+    "watch": "dsbuild --in=src/app.tsx --react-static --watch & echo 'Open public/index.html in your browser.'"
   },
   "imports": {
     "react": "https://esm.sh/v119/react@18.2.0?dev",

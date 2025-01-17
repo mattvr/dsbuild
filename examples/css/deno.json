@@ -1,7 +1,8 @@
 {
   "tasks": {
     "build": "dsbuild --css --in=src/",
-    "run": "deno task build && dsbuild --serve-only"
+    "watch": "dsbuild --css --in=src/ --watch",
+    "run": "deno task watch & dsbuild --serve-only"
   },
   "imports": {
   }

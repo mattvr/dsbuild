@@ -137,11 +137,20 @@ console.log('<!DOCTYPE html>' + compiled)`;
 
   const existingConfigText = await Deno.readTextFile("deno.jsonc");
   if (existingConfigText) {
-    const existingConfig = parseJsonc(existingConfigText);
-    let imports = existingConfig.imports;
-    if (existingConfig.importMap) {
-      const importMap = await Deno.readTextFile(existingConfig.importMap);
-      imports = parseJsonc(importMap).imports;
+    const existingConfig = parseJsonc(existingConfigText) as {
+      imports?: {
+        [key: string]: string;
+      };
+      importMap?: string;
+    };
+    let imports = existingConfig?.imports;
+    if (existingConfig?.importMap) {
+      const importMap = await Deno.readTextFile(existingConfig?.importMap);
+      imports = (parseJsonc(importMap) as {
+        imports: {
+          [key: string]: string;
+        };
+      }).imports;
     }
     config.imports = {
       ...config.imports,

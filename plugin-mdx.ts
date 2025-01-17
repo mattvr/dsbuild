@@ -1,10 +1,10 @@
-import { compileMdx as compileMdx_, dirname, ensureDir, esbuild, extname, join } from './deps.ts';
+import { compileMdx as compileMdx_, dirname, ensureDir, esbuild, extname, join, normalize, resolve } from './deps.ts';
 
 export const buildMdx = async (options: {
   inFile?: string; // input file (e.g. src/app.tsx)
   outFile?: string; // output file (e.g. public/app.js)
   outDir?: string; // output directory (e.g. public)
-  watch?: boolean; // watch for changes
+  watch?: boolean | string; // watch for changes
 }) => {
   const {
     inFile = Deno.cwd(),
@@ -79,7 +79,24 @@ export const buildMdx = async (options: {
   if (!options.watch) {
     return;
   }
-  const watcher = Deno.watchFs(inFile, { recursive: true });
+  
+  const inDir = dirname(inFile);
+  const watchDirs = typeof options.watch === "string"
+    ? options.watch.split(",").map(normalize)
+    : [inDir];
+  const arePathsEqual = (path1: string, path2: string) => {
+    return normalize(resolve(path1)) === normalize(resolve(path2));
+  };
+
+  const outDir = outFile ? dirname(outFile) : outDir_ ? normalize(outDir_) : undefined;
+
+  if (outDir && watchDirs.some((dir) => arePathsEqual(dir, outDir))) {
+    throw new Error(
+      "Input watch directory and output directories cannot be the same when using --watch, will cause infinite loop.",
+    );
+  }
+
+  const watcher = Deno.watchFs(watchDirs, { recursive: true });
   for await (const event of watcher) {
     // if any paths end with .mdx, then rebuild
     let rebuild = false;

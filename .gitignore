@@ -1,5 +1,4 @@
 *
-!ignore/**/*
 !.gitignore
 !.gitattributes
 !examples/
@@ -12,5 +11,6 @@
 !*.mdx
 !*.ts
 !*.tsx
+!examples/css/src/*.css
 !dsbuild.svg
 examples/**/app.js

@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "build": "dsbuild --mdx && dsbuild --in=src/app.tsx",
-    "run": "deno task build && dsbuild --serve-only"
+    "build": "dsbuild --mdx --in=src/MyExample.mdx && dsbuild --in=src/app.tsx",
+    "run": "dsbuild --mdx --in=src/MyExample.mdx --out=src/MyExample.jsx --watch=src/MyExample.mdx & dsbuild --in=src/app.tsx --watch --serve"
   },
   "imports": {
     "react": "https://esm.sh/v119/react@18.2.0?dev",

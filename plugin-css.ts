@@ -1,13 +1,10 @@
 import { dirname, initCss, transformCss } from "./deps.ts";
-
-import { join } from "./deps.ts";
-import {
-  IS_DEV
-} from "./stuff.ts";
+import { join, normalize, resolve } from "./deps.ts";
+import { IS_DEV } from "./stuff.ts";
 export const buildCss = async (options: {
   inFile?: string; // input file (e.g. src/app.css)
   outFile?: string; // output file (e.g. public/app.css)
-  watch?: boolean; // watch for changes
+  watch?: boolean | string; // watch for changes
 }) => {
   const {
     inFile = Deno.cwd(),
@@ -19,7 +16,7 @@ export const buildCss = async (options: {
     const maybeFolder = await Deno.stat(inFile);
     if (!maybeFolder.isDirectory) {
       throw new Error(
-        `Input file must be a directory containing CSS files. (got ${inFile})`
+        `Input file must be a directory containing CSS files. (got ${inFile})`,
       );
     }
 
@@ -73,7 +70,23 @@ export const buildCss = async (options: {
   await doBuild();
 
   if (watch) {
-    const watcher = Deno.watchFs(inFile, { recursive: true });
+    const inDir = dirname(inFile);
+    const watchDirs = typeof watch === "string"
+      ? watch.split(",").map(normalize)
+      : [inDir];
+    const arePathsEqual = (path1: string, path2: string) => {
+      return normalize(resolve(path1)) === normalize(resolve(path2));
+    };
+
+    const outDir = dirname(outFile);
+
+    if (watchDirs.some((dir) => arePathsEqual(dir, outDir))) {
+      throw new Error(
+        "Input watch directory and output directories cannot be the same when using --watch, will cause infinite loop.",
+      );
+    }
+
+    const watcher = Deno.watchFs(watchDirs, { recursive: true });
     for await (const event of watcher) {
       if (
         event.kind === "modify" ||
