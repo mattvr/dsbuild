@@ -13,32 +13,38 @@ export const buildCss = async (options: {
   } = options;
 
   const doBuild = async () => {
-    const maybeFolder = await Deno.stat(inFile);
-    if (!maybeFolder.isDirectory) {
-      throw new Error(
-        `Input file must be a directory containing CSS files. (got ${inFile})`,
-      );
-    }
+    const files = inFile.split(",").map(normalize);
+    const cssFiles: { path: string; file: string }[] = [];
+    for (const file of files) {
+      const maybeFolder = await Deno.stat(file);
+      if (!maybeFolder.isDirectory) {
+        throw new Error(
+          `Input file must be a directory (or comma separated list of directories) containing CSS files. (got ${file})`,
+        );
+      }
 
-    const cssFiles: string[] = [];
-    for await (const entry of Deno.readDir(inFile)) {
-      if (entry.isFile && entry.name.endsWith(".css")) {
-        cssFiles.push(entry.name);
+      for await (const entry of Deno.readDir(file)) {
+        if (entry.isFile && entry.name.endsWith(".css")) {
+          cssFiles.push({
+            path: entry.name,
+            file: file,
+          });
+        }
       }
     }
 
     cssFiles.sort((a, b) => {
-      const orderA = a.split(".").length;
-      const orderB = b.split(".").length;
+      const orderA = a.path.split(".").length;
+      const orderB = b.path.split(".").length;
       if (orderA === orderB) {
-        return a.localeCompare(b);
+        return a.path.localeCompare(b.path);
       }
       return orderA - orderB;
     });
 
     let combinedCss = "";
     for (const file of cssFiles) {
-      const filePath = join(inFile, file);
+      const filePath = join(file.file, file.path);
       const cssContent = await Deno.readTextFile(filePath);
       combinedCss += cssContent + "\n";
     }
@@ -70,10 +76,10 @@ export const buildCss = async (options: {
   await doBuild();
 
   if (watch) {
-    const inDir = dirname(inFile);
+    const inDirs = inFile.includes(",") ? inFile.split(",").map(normalize) : [normalize(inFile)];
     const watchDirs = typeof watch === "string"
       ? watch.split(",").map(normalize)
-      : [inDir];
+      : inDirs;
     const arePathsEqual = (path1: string, path2: string) => {
       return normalize(resolve(path1)) === normalize(resolve(path2));
     };

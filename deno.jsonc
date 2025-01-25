@@ -1,13 +1,13 @@
 {
   "name": "@orgsoft/dsbuild",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "exports": "./mod.ts",
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "dom.asynciterable", "esnext", "deno.ns"],
     "jsx": "react-jsxdev",
     "jsxImportSource": "react"
   },
-  "vendor": true,
+  "vendor": false,
   "tasks": {
     "install": "deno install -frAg --name dsbuild mod.ts"
   },
