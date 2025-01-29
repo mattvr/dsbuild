@@ -1,5 +1,5 @@
 import { isAbsolute, join, resolve, normalize } from "./deps.ts";
-import denoJson from "./deno.json" assert { type: "json" };
+import denoJson from "./deno.json" with { type: "json" };
 
 export const DSBUILD_VERSION = denoJson.version;
 export const IS_DEV = Deno.env.get("DENO_ENV") === "development";
