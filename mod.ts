@@ -81,6 +81,7 @@ Example usage:
   } catch (_) { /**/ }
   let serveDir = args["serve-dir"] || DEFAULT_SERVE_DIR;
   let importMap = args["import-map"];
+  let configPath = args["config"];
   let useHash = args["hash"];
   let logLevel = args["log-level"] || "info";
   const target = args["target"] ? args["target"].split(",") : null;
@@ -264,7 +265,8 @@ Example usage:
     serveDir,
     plugins: [mdxPlugin],
     logLevel,
-    external
+    external,
+    configPath,
   });
 
   Deno.exit(0);

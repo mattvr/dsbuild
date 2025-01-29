@@ -1,4 +1,4 @@
-import { dirname, esbuild } from "./deps.ts";
+import { dirname, esbuild, parseJsonc } from "./deps.ts";
 
 import {
   denoLoaderPlugin,
@@ -17,6 +17,7 @@ export type BuildOptions = {
   serve?: "only" | boolean; // serve only, or serve and build
   importMap?: string; // import map (e.g. importMap.json)
   target?: string; // esbuild target (e.g. chrome99, firefox99, safari15)
+  configPath?: string; // config path (e.g. deno.json)
 
   inFile: string; // input file (e.g. src/app.tsx)
   inFiles?: string[]; // input files array (used for splitting)
@@ -50,6 +51,7 @@ export const build = async (options: BuildOptions) => {
     hash,
     logLevel,
     external,
+    configPath,
   } = options;
 
   // Generate directories recursively if they don't exist
@@ -58,17 +60,30 @@ export const build = async (options: BuildOptions) => {
 
   const split = inFiles?.length ? true : false;
 
+  const config = configPath
+    ? configPath.endsWith(".jsonc")
+      ? parseJsonc(await Deno.readTextFile(configPath))
+      : JSON.parse(await Deno.readTextFile(configPath))
+    : undefined;
+
   const opts: esbuild.BuildOptions = {
     plugins: [
       denoResolverPlugin(
         importMap
           ? {
             importMapURL: importMap,
+            // configPath: configPath,
           }
           : {},
       ),
       ...plugins,
-      denoLoaderPlugin({}),
+      denoLoaderPlugin({
+        importMapURL: importMap,
+        nodeModulesDir: config?.nodeModulesDir
+          ? config?.nodeModulesDir
+          : "auto",
+        loader: config?.nodeModulesDir === "auto" ? "portable" : "native",
+      }),
     ],
     entryPoints: split ? inFiles : [inFile],
     ...(split ? { outdir: outDir } : { outfile: outFile }),

@@ -1,6 +1,6 @@
 {
   "name": "@orgsoft/dsbuild",
-  "version": "0.2.4",
+  "version": "0.2.6",
   "exports": "./mod.ts",
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "dom.asynciterable", "esnext", "deno.ns"],
@@ -15,5 +15,5 @@
     "react": "npm:react@^18.3.1",
     "react-dom/client": "npm:react-dom@18.3.1/client",
     "react-dom": "npm:react-dom@18.3.1"
-  },
+  }
 }
