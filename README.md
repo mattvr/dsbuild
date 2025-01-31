@@ -116,9 +116,13 @@ and you should see the page immediately update.
 
 <br /><br />
 
-## Contributors
+## Contributions & local development
 
-Feel free to contribute to this project.
+You can clone this repository to make changes. 
+
+Once you have a local copy, run `deno task install:dev` from this directory to replace your `dsbuild` installation with a local development copy.
+
+Contributions are welcome.
 
 ## License
 

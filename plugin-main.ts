@@ -12,30 +12,75 @@ import {
 import { serve, setServeDir } from "./serve.ts";
 import { DEFAULT_SERVE_DIR, IS_DEV } from "./stuff.ts";
 
+/**
+ * Options for configuring the build process
+ */
 export type BuildOptions = {
-  watch?: boolean | string; // watch for changes
-  serve?: "only" | boolean; // serve only, or serve and build
-  importMap?: string; // import map (e.g. importMap.json)
-  target?: string; // esbuild target (e.g. chrome99, firefox99, safari15)
-  configPath?: string; // config path (e.g. deno.json)
+  /** Watch for changes to source files and rebuild automatically */
+  watch?: boolean | string;
 
-  inFile: string; // input file (e.g. src/app.tsx)
-  inFiles?: string[]; // input files array (used for splitting)
-  outFile: string; // output file (e.g. public/app.js)
-  outDir?: string; // output file directory (used for splitting)
-  outbase: string; // output file directory base (used for splitting)
-  serveDir?: string; // directory to serve (e.g. public)
-  hash?: boolean; // use hash in output file
-  external?: string[]; // external dependencies
+  /** Whether to serve files only, or serve and build */
+  serve?: "only" | boolean;
 
-  plugins?: esbuild.Plugin[]; // additional esbuild plugins
-  logLevel?: esbuild.LogLevel; // log level
-  ignoredWarnings?: string[]; // ignored warnings
+  /** Path to import map file (e.g. importMap.json) */
+  importMap?: string;
+
+  /** esbuild target (e.g. chrome99, firefox99, safari15) */
+  target?: string;
+
+  /** Path to config file (e.g. deno.json) */
+  configPath?: string;
+
+  /** Input file path (e.g. src/app.tsx) */
+  inFile: string;
+
+  /** Array of input files (used for code splitting) */
+  inFiles?: string[];
+
+  /** Output file path (e.g. public/app.js) */
+  outFile: string;
+
+  /** Output directory path (used for code splitting) */
+  outDir?: string;
+
+  /** Base directory for output files (used for code splitting) */
+  outbase: string;
+
+  /** Directory to serve files from (e.g. public) */
+  serveDir?: string;
+
+  /** Whether to include a hash in output filenames */
+  hash?: boolean;
+
+  /** External dependencies to exclude from bundle */
+  external?: string[];
+
+  /** Whether to automatically open browser when serving */
+  launchBrowser?: boolean;
+
+  /** Additional esbuild plugins */
+  plugins?: esbuild.Plugin[];
+
+  /** esbuild log level */
+  logLevel?: esbuild.LogLevel;
+
+  /** Warning messages to ignore */
+  ignoredWarnings?: string[];
+
+  /** Source map generation options */
+  sourcemap?: boolean | "linked" | "inline" | "external" | "both";
+
+  /** Port number to serve on */
+  port?: number;
 };
 
 let isFirstBuild = true;
 
-export const build = async (options: BuildOptions) => {
+/**
+ * Builds a project using esbuild
+ * @param options - Build options
+ */
+export const build = async (options: BuildOptions): Promise<void> => {
   const {
     watch,
     serve: shouldServe,
@@ -52,6 +97,9 @@ export const build = async (options: BuildOptions) => {
     logLevel,
     external,
     configPath,
+    sourcemap,
+    launchBrowser,
+    port,
   } = options;
 
   // Generate directories recursively if they don't exist
@@ -98,6 +146,7 @@ export const build = async (options: BuildOptions) => {
     splitting: split,
     logLevel,
     external,
+    sourcemap: sourcemap,
     // write: false,
     banner: IS_DEV
       ? { js: "globalThis.window.DENO_ENV = 'development';\n" }
@@ -153,7 +202,10 @@ export const build = async (options: BuildOptions) => {
   const serveBlock = async () => {
     // Just serve and don't terminate
     setServeDir(serveDir);
-    await serve();
+    await serve({
+      launchBrowser,
+      port,
+    });
     return;
   };
 
@@ -162,7 +214,7 @@ export const build = async (options: BuildOptions) => {
     const worker = new Worker(new URL("serve.ts", import.meta.url).href, {
       type: "module",
     });
-    worker.postMessage({ serveDir });
+    worker.postMessage({ serveDir, launchBrowser, port });
   };
 
   if (!watch && !shouldServe) {

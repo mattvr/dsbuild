@@ -1,14 +1,14 @@
-let serveDir: string | null = null
+let serveDir: string | null = null;
 
 export const setServeDir = (serveDir_: string) => {
-  serveDir = serveDir_
-}
+  serveDir = serveDir_;
+};
 
 self.addEventListener("message", (e: any) => {
-  const { serveDir: serveDir_ } = e.data
-
-  setServeDir(serveDir_)
-})
+  const { serveDir: serveDir_, launchBrowser, port } = e.data;
+  setServeDir(serveDir_);
+  serve({ launchBrowser, port });
+});
 
 const serveFile = async (req: Request): Promise<Response> => {
   // const startTime = performance.now();
@@ -26,23 +26,28 @@ const serveFile = async (req: Request): Promise<Response> => {
   path = path.substring(1);
 
   if (path === "") {
-    path = `${serveDir}/index.html`
+    path = `${serveDir}/index.html`;
   } else {
-    path = `${serveDir}/${path}`
+    path = `${serveDir}/${path}`;
   }
 
   let file: Deno.FsFile;
   try {
     file = await Deno.open(path);
-  }
-  catch (e) {
+  } catch (e) {
     return new Response("Not found", {
       status: 404,
       headers,
     });
   }
 
-  const contentType = path.endsWith(".html") ? "text/html" : path.endsWith(".js") ? "text/javascript" : path.endsWith(".css") ? "text/css" : "text/plain"
+  const contentType = path.endsWith(".html")
+    ? "text/html"
+    : path.endsWith(".js")
+    ? "text/javascript"
+    : path.endsWith(".css")
+    ? "text/css"
+    : "text/plain";
 
   headers.set("Content-Type", contentType);
 
@@ -54,12 +59,62 @@ const serveFile = async (req: Request): Promise<Response> => {
   return new Response(file.readable, {
     headers,
   });
+};
+
+export const serve = (
+  opts?: { launchBrowser?: boolean; port?: number },
+): Promise<void> => {
+  const server = Deno.serve({
+    port: opts?.port || 8000,
+  }, serveFile);
+  if (opts?.launchBrowser) {
+    openWebsite(`http://localhost:${opts.port || 8000}`);
+  }
+  return server.finished;
+};
+
+/**
+ * Open a web page with the appropriate browser.
+ *
+ * This utility is used by a few dev-servers to
+ * auto-launch the browser with the url being served.
+ * @module
+ */
+
+/**
+ * Get a browser open command based on the os
+ * @returns the string for the command to call
+ */
+export function getBrowserCmd(): string {
+  switch (Deno.build.os) {
+    case "windows":
+      return "explorer.exe";
+    case "darwin":
+      return "open";
+    case "linux":
+      if (Deno.env.get("WSL_DISTRO_NAME")) {
+        // is WSL
+        return "explorer.exe";
+      } else {
+        return "xdg-open";
+      }
+    default:
+      return "Unknown os";
+  }
 }
 
-export const serve = (): Promise<void> => {
-  return Deno.serve(serveFile).finished
+/**
+ * Opens a URL in the default browser
+ *
+ * @param url  - the complete url to be opened in the browser
+ *
+ * @examples
+ *    openWebsite('https://Deno.com')
+ *    openWebsite('http://localhost:8080')
+ */
+export function openWebsite(url: string): Deno.CommandOutput {
+  return new Deno.Command(getBrowserCmd(), { args: [url] }).outputSync();
 }
 
 if (import.meta.main) {
-  await serve()
 }

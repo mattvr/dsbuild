@@ -47,6 +47,9 @@ Example usage:
 
  \`dsbuild --init=react\`
     - Initialize a React project (can also be \`mdx\`, \`node\`, \'basic\', \`react-static\`)
+
+  \`dsbuild --port=8080\`
+    - Set the port to serve on
 `;
 
   const args = parseArgs(Deno.args);
@@ -84,6 +87,22 @@ Example usage:
   let configPath = args["config"];
   let useHash = args["hash"];
   let logLevel = args["log-level"] || "info";
+  let sourcemap = args["sourcemap"] || false;
+  if (sourcemap === "true") {
+    sourcemap = true;
+  }
+  if (sourcemap === "false") {
+    sourcemap = false;
+  }
+  let launchBrowser = args["launch-browser"] || false;
+  let port = args["port"];
+  if (port) {
+    port = parseInt(port);
+    if (isNaN(port)) {
+      console.error("Invalid port number");
+      Deno.exit(1);
+    }
+  }
   const target = args["target"] ? args["target"].split(",") : null;
 
   const watchArg = args["live"] || args["watch"] || args["w"] || args["l"];
@@ -267,6 +286,9 @@ Example usage:
     logLevel,
     external,
     configPath,
+    sourcemap,
+    launchBrowser,
+    port,
   });
 
   Deno.exit(0);
