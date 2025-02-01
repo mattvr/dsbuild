@@ -43,7 +43,7 @@ const serveFile = async (req: Request): Promise<Response> => {
 
   const contentType = path.endsWith(".html")
     ? "text/html"
-    : path.endsWith(".js")
+    : !!path.match(/\.(js|es|mjs)$/)
     ? "text/javascript"
     : path.endsWith(".css")
     ? "text/css"
