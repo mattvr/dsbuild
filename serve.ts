@@ -24,18 +24,18 @@ const serveFile = async (req: Request): Promise<Response> => {
     });
   }
 
-  let path = new URL(req.url).pathname;
-  path = path.substring(1);
+  const pathname = new URL(req.url).pathname;
+  let filePath = pathname;
 
-  if (path === "") {
-    path = `${serveDir}/index.html`;
+  if (pathname === "" || pathname === "/") {
+    filePath = `${serveDir}/index.html`;
   } else {
-    path = `${serveDir}/${path}`;
+    filePath = `${serveDir}/${pathname}`;
   }
 
   let file: Deno.FsFile;
   try {
-    file = await Deno.open(path);
+    file = await Deno.open(filePath);
   } catch (e) {
     return new Response("Not found", {
       status: 404,
@@ -43,10 +43,16 @@ const serveFile = async (req: Request): Promise<Response> => {
     });
   }
 
-  const ext = path.split(".").pop() || "";
-  const ct = contentType(ext) || ext === 'es' ? "text/javascript; charset=UTF-8" : "application/octet-stream";
+  const ext = pathname.split(".").pop() || "";
+  const ct = pathname === "/"
+    ? "text/html; charset=UTF-8"
+    : contentType(ext) || (ext === "es"
+      ? "text/javascript; charset=UTF-8"
+      : "application/octet-stream");
 
-  const fileSize = (await Deno.stat(path)).size;
+  console.log(pathname, filePath, ct, ext);
+
+  const fileSize = (await Deno.stat(filePath)).size;
   headers.set("Content-Type", ct);
   headers.set("Content-Length", fileSize.toString());
 
