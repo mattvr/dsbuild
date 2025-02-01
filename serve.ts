@@ -1,3 +1,5 @@
+import { contentType } from "./deps.ts";
+
 let serveDir: string | null = null;
 
 export const setServeDir = (serveDir_: string) => {
@@ -41,15 +43,11 @@ const serveFile = async (req: Request): Promise<Response> => {
     });
   }
 
-  const contentType = path.endsWith(".html")
-    ? "text/html"
-    : path.endsWith(".js")
-    ? "text/javascript"
-    : path.endsWith(".css")
-    ? "text/css"
-    : "text/plain";
+  const ct = contentType(path.split(".").pop() || "") || "application/octet-stream";
 
-  headers.set("Content-Type", contentType);
+  const fileSize = (await Deno.stat(path)).size;
+  headers.set("Content-Type", ct);
+  headers.set("Content-Length", fileSize.toString());
 
   // const data = (await toArrayBuffer(file.readable))
 

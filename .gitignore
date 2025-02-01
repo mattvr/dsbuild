@@ -13,4 +13,5 @@
 !*.tsx
 !examples/css/src/*.css
 !dsbuild.svg
+examples/**/node_modules
 examples/**/app.js
