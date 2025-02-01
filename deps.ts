@@ -9,7 +9,7 @@ import { isAbsolute, join, resolve, normalize, dirname, extname, parse } from 'j
 import { ensureDir } from 'jsr:@std/fs@^1'
 import init, { transform } from "npm:lightningcss-wasm@^1.29.1";
 import { parse as parseJsonc } from "jsr:@std/jsonc@^1";
-import { contentType } from "jsr:@std/media-types";
+import { contentType } from "jsr:@std/media-types@^1";
 
 const compileMdx = async (text: string) => {
   return compileMdx_(text, {
