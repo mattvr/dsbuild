@@ -43,7 +43,8 @@ const serveFile = async (req: Request): Promise<Response> => {
     });
   }
 
-  const ct = contentType(path.split(".").pop() || "") || "application/octet-stream";
+  const ext = path.split(".").pop() || "";
+  const ct = contentType(ext) || ext === 'es' ? "text/javascript; charset=UTF-8" : "application/octet-stream";
 
   const fileSize = (await Deno.stat(path)).size;
   headers.set("Content-Type", ct);
