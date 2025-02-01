@@ -1,4 +1,4 @@
-import { contentType } from "./deps.ts";
+import { contentType, join } from "./deps.ts"; 
 
 let serveDir: string | null = null;
 
@@ -13,7 +13,6 @@ self.addEventListener("message", (e: any) => {
 });
 
 const serveFile = async (req: Request): Promise<Response> => {
-  // const startTime = performance.now();
   const headers = new Headers({
     "X-Deno-Version": Deno.version.deno,
   });
@@ -28,9 +27,9 @@ const serveFile = async (req: Request): Promise<Response> => {
   let filePath = pathname;
 
   if (pathname === "" || pathname === "/") {
-    filePath = `${serveDir}/index.html`;
+    filePath = join(serveDir, "index.html");
   } else {
-    filePath = `${serveDir}/${pathname}`;
+    filePath = join(serveDir, pathname);
   }
 
   let file: Deno.FsFile;
@@ -50,16 +49,9 @@ const serveFile = async (req: Request): Promise<Response> => {
       ? "text/javascript; charset=UTF-8"
       : "application/octet-stream");
 
-  console.log(pathname, filePath, ct, ext);
-
   const fileSize = (await Deno.stat(filePath)).size;
   headers.set("Content-Type", ct);
   headers.set("Content-Length", fileSize.toString());
-
-  // const data = (await toArrayBuffer(file.readable))
-
-  // headers.set("Content-Length", data.byteLength.toString());
-  // headers.set("X-Response-Time", `${performance.now() - startTime}ms`);
 
   return new Response(file.readable, {
     headers,

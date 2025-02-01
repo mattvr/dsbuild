@@ -1,6 +1,6 @@
 {
   "name": "@orgsoft/dsbuild",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "exports": "./mod.ts",
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "dom.asynciterable", "esnext", "deno.ns"],
